@@ -1,0 +1,20 @@
+(ocamllex
+ (modules lexer))
+
+(menhir
+ (modules menhir_parser)
+ (explain true))
+
+(library
+ (name nox)
+ (libraries
+  core
+  parallel
+  parallel.scheduler
+  async
+  concurrent
+  concurrent.in_async
+  nice_parser)
+ (preprocess
+  (pps ppx_jane))
+ (inline_tests))

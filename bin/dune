@@ -1,0 +1,6 @@
+(executable
+ (public_name nox)
+ (name main)
+ (libraries nox core_unix)
+ (preprocess
+  (pps ppx_jane)))
