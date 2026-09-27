@@ -2,7 +2,9 @@ open! Core
 open! Await
 open! Async
 module Ast = Ast
+module Ident = Ident
 module Value = Value
+module Parser = Parser
 
 let () = Parser.pp_exceptions ()
 let eval par expr = Eval.eval par ~env:Eval.Env.empty expr

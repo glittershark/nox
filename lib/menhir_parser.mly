@@ -6,7 +6,7 @@
 
 %left PLUS MINUS
 
-%start <Types.Ast.expr> expr_eof
+%start <Types.expr> expr_eof
 
 %{ open! Core %}
 
@@ -59,10 +59,19 @@ expr_simple:
   | i=ident { { Ast.desc = Ident i } }
   | l=literal { { Ast.desc = Lit l } }
   | LPAR e=expr RPAR { e }
+  | LCURLY bindings=binding* RCURLY
+    { { Ast.desc = Attrset (Iarray.of_list bindings) } }
+  ;
+
+(* As in nix, a binding name is either a bare identifier or a quoted string, so that
+   attributes whose names aren't identifiers can still be written down. *)
+attr_name:
+  | i=ident { i }
+  | s=STRING { Ident.of_string s }
   ;
 
 binding:
-  name=ident (* TODO: attrpath *)
+  name=attr_name (* TODO: attrpath *)
   EQUAL
   value=expr
   SEMI

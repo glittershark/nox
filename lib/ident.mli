@@ -2,7 +2,7 @@
 
 open! Core
 
-type t = private string
+type t = private string [@@deriving quickcheck]
 type comparator_witness : value mod portable
 
 include
