@@ -39,5 +39,5 @@ let%expect_test "set with nested attrs" =
 let%expect_test "attr selection" =
   test_parse_and_eval ~print:true ~force:true "let m = { x.y = 4; }; in [ m m.x m.x.y ]";
   [%expect
-    {| [ {x = {y = 4;};} {y = 4;} 4] |}]
+    {| [  { x = { y = 4; }; } { y = 4; } 4 ] |}]
 ;;

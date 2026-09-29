@@ -95,14 +95,17 @@ let rec to_string =
       [%string {|"%{escaped}"|}]
     | Attrs a ->
       String.concat
-        [ "{"
+        [ "{ "
         ; Map.fold a.attrs ~init:"" ~f:(fun ~key ~data acc ->
-            String.concat [ acc; Ident.to_string key; " = "; to_string par data; ";" ])
+            String.concat [ acc; Ident.to_string key; " = "; to_string par data; "; " ])
         ; "}"
         ]
     | List l ->
       String.concat
-        [ "["; Iarray.fold l ~init:"" ~f:(fun acc v -> acc ^ " " ^ to_string par v); "]" ]
+        [ "[ "
+        ; Iarray.fold l ~init:"" ~f:(fun acc v -> acc ^ " " ^ to_string par v)
+        ; " ]"
+        ]
     | Lambda _ -> "<lambda>"
     | Thunk _ -> to_string par (force par t)
 ;;
