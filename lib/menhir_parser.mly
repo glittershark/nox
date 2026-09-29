@@ -1,12 +1,13 @@
-%token EOF LPAR RPAR LCURLY RCURLY LET IN SEMI COLN NULL PLUS MINUS IF THEN ELSE
-%token TRUE FALSE EQUAL
+%token EOF LPAR RPAR LCURLY RCURLY LSQUARE RSQUARE LET IN SEMI COLN NULL PLUS 
+%token MINUS IF THEN ELSE TRUE FALSE EQUAL
 %token <string> STRING
 %token <string> IDENT
 %token <int> INT
+%token <float> FLOAT
 
 %left PLUS MINUS
 
-%start <Types.Ast.expr> expr_eof
+%start <Types.expr> expr_eof
 
 %{ open! Core %}
 
@@ -20,6 +21,7 @@ literal:
   | FALSE { Value.Bool false }
   | s=STRING { Value.String s }
   | i=INT { Value.Integer i }
+  | f=FLOAT { Value.Float f }
   ;
 
 expr_eof:
@@ -59,10 +61,19 @@ expr_simple:
   | i=ident { { Ast.desc = Ident i } }
   | l=literal { { Ast.desc = Lit l } }
   | LPAR e=expr RPAR { e }
+  | LCURLY bindings=binding* RCURLY
+    { { Ast.desc = Attrset (Iarray.of_list bindings) } }
+  | LSQUARE exprs=expr_simple* RSQUARE
+    { { Ast.desc = List (Iarray.of_list exprs) } }
+  ;
+
+attr_name:
+  | i=ident { i }
+  | s=STRING { Ident.of_string s }
   ;
 
 binding:
-  name=ident (* TODO: attrpath *)
+  name=attr_name (* TODO: attrpath *)
   EQUAL
   value=expr
   SEMI

@@ -1,5 +1,9 @@
 (library
  (name test_nox)
- (libraries core nox)
+ (libraries core base_quickcheck expect_test_helpers_core nox)
  (preprocess
-  (pps ppx_jane ppx_inline_test)))
+  (pps ppx_jane ppx_quick_test))
+ (inline_tests))
+
+(cram
+ (deps %{bin:nox}))

@@ -21,11 +21,15 @@ let ident_start_char = [
   'A'-'Z'
   'a'-'z'
 ]
-let ident_char = ident_start_char | [ '0'-'9' ]
+let ident_char = ident_start_char | [ '0'-'9' '_' '-']
 let ident = ident_start_char ident_char*
 
 let decimal_literal =
-  '-'? ['0'-'9'] ['0'-'9' '_']*
+  '-'? ['0'-'9'] ['0'-'9']*
+let float_literal =
+  '-'? ['0'-'9'] ['0'-'9']*
+  ('.' ['0'-'9']* )
+  (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']* )?
 
 let int_literal =
   decimal_literal
@@ -40,6 +44,8 @@ rule next_token = parse
   | ')' { RPAR }
   | '{' { LCURLY }
   | '}' { RCURLY }
+  | '[' { LSQUARE }
+  | ']' { RSQUARE }
   | ';' { SEMI }
   | ':' { COLN }
   | '+' { PLUS }
@@ -64,13 +70,18 @@ rule next_token = parse
       STRING (Buffer.contents string_buff)
     }
 
+  | float_literal as fl
+    { try
+        FLOAT (float_of_string fl)
+      with Failure _ ->
+        failwith "Float literal overflow"
+    }  
   | int_literal as il
     { try
         INT (int_of_string il)
       with Failure _ ->
         failwith "Integer literal overflow"
     }
-
   | ident as id { IDENT id }
 
   | _ as chr { illegal chr }
@@ -80,6 +91,9 @@ and comment = parse
   | _ { comment lexbuf }
 
 and string = parse
+  | "\\\\"
+    { Buffer.add_char string_buff '\\';
+      string lexbuf }
   | "\\\""
     { Buffer.add_char string_buff '"';
       string lexbuf }
@@ -87,10 +101,14 @@ and string = parse
   | '"' { () }
   | eof
       { is_in_string := false;
-        failwith "Unterminated string" }
+        failwithf "Unterminated string (seen: %s)" (Buffer.contents string_buff) () }
 
   | "\\n"
     { Buffer.add_char string_buff '\n';
+      string lexbuf }
+
+  | "\\$"
+    { Buffer.add_char string_buff '$';
       string lexbuf }
 
   | _ as chr

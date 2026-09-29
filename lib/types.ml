@@ -1,67 +1,58 @@
 open! Core
+open! Import
 
-module rec Value : sig
-  type t =
-    | Null
-    | Bool of bool
-    | Integer of int
-    | Float of float
-    | String of string (* TODO: context *)
-    | Attrs of Attrs.t
-    | List of t iarray
-    | Lambda of Lambda.t
-    | Thunk of t Parallel.Lazy.t
-end =
-  Value
+type value =
+  | Null
+  | Bool of bool
+  | Integer of int
+  | Float of float
+  | String of string (* TODO: context *)
+  | Attrs of attrs
+  | List of value iarray
+  | Lambda of lambda
+  | Thunk of value Parallel.Lazy.t
+[@@deriving sexp_of]
 
-and Attrs : sig
-  type t = { attrs : Value.t Ident.Map.t } [@@unboxed]
-end =
-  Attrs
+and attrs = { attrs : value Ident.Map.t } [@@unboxed] [@@deriving sexp_of]
 
-and Lambda : sig
-  type t =
-    { args : Ident.t iarray
-    ; body : Ast.expr
-    }
-end =
-  Lambda
+and lambda =
+  { args : Ident.t iarray
+  ; body : expr
+  }
+[@@deriving sexp_of]
 
-and Ast : sig
-  type expr = { desc : expr_desc }
+and expr = { desc : expr_desc }
 
-  and expr_desc =
-    | Lit of Value.t
-    | Ident of Ident.t
-    | Bin_op of
-        { lhs : expr
-        ; op : bin_op
-        ; rhs : expr
-        }
-    | If of
-        { cond : expr
-        ; then_ : expr
-        ; else_ : expr
-        }
-    | Apply of
-        { func : expr
-        ; args : expr iarray
-        }
-    | Let of
-        { bindings : attrset
-        ; body : expr
-        }
-    | Lam of
-        { args : Ident.t iarray
-        ; body : expr
-        }
-    | List of expr iarray
-    | Attrset of attrset
+and expr_desc =
+  | Lit of value
+  | Ident of Ident.t
+  | Bin_op of
+      { lhs : expr
+      ; op : bin_op
+      ; rhs : expr
+      }
+  | If of
+      { cond : expr
+      ; then_ : expr
+      ; else_ : expr
+      }
+  | Apply of
+      { func : expr
+      ; args : expr iarray
+      }
+  | Let of
+      { bindings : attrset
+      ; body : expr
+      }
+  | Lam of
+      { args : Ident.t iarray
+      ; body : expr
+      }
+  | List of expr iarray
+  | Attrset of attrset
 
-  and attrset = (name:Ident.t * value:expr) iarray
+and attrset = (name:Ident.t * value:expr) iarray
 
-  and bin_op =
-    | Plus
-    | Minus
-end =
-  Ast
+and bin_op =
+  | Plus
+  | Minus

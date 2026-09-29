@@ -2,7 +2,9 @@ open! Core
 open! Await
 open! Async
 module Ast = Ast
+module Ident = Ident
 module Value = Value
+module Parser = Parser
 
 let () = Parser.pp_exceptions ()
 let eval par expr = Eval.eval par ~env:Eval.Env.empty expr
@@ -29,7 +31,7 @@ let cmd_eval =
            Error exn
          | expr ->
            Concurrent.spawn_join conc () ~f:(fun _ par _ : (unit, exn) result ->
-             let res = eval par expr |> Value.deep_force par in
+             let res = eval par expr |> Value.recursive_force par in
              Core.print_s [%sexp (res : Value.t)];
              Ok ()))
        >>= function
