@@ -51,6 +51,7 @@ rule next_token = parse
   | '+' { PLUS }
   | '-' { MINUS }
   | '=' { EQUAL }
+  | '.' { DOT }
   | "let" { LET }
   | "in" { IN }
   | "if" { IF }
@@ -59,6 +60,7 @@ rule next_token = parse
   | "null" { NULL }
   | "true" { TRUE }
   | "false" { FALSE }
+  | "or" { OR }
 
   | "\""
     { Buffer.reset string_buff;

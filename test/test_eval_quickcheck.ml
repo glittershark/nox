@@ -66,7 +66,8 @@ module Term = struct
       { desc =
           Let
             { bindings =
-                Iarray.singleton (~name:(Nox.Ident.of_string name), ~value:(to_expr bound))
+                Iarray.singleton
+                  ([: Nox.Ast.Ident_attr (Nox.Ident.of_string name) :], to_expr bound)
             ; body = to_expr body
             }
       }

@@ -30,6 +30,38 @@ let%expect_test "strings" =
   [%expect {| ((desc (Lit (String \)))) |}]
 ;;
 
+let%expect_test "attr select" =
+  test "foo.bar";
+  [%expect {|
+    ((
+      desc (
+        Select
+        (source ((desc (Ident foo))))
+        (path ((Ident_attr bar)))
+        (default ()))))
+    |}];
+  test "foo.bar.baz";
+  [%expect {|
+    ((
+      desc (
+        Select
+        (source ((desc (Ident foo))))
+        (path (
+          (Ident_attr bar)
+          (Ident_attr baz)))
+        (default ()))))
+    |}];
+  test "foo.bar or 4";
+  [%expect {|
+    ((
+      desc (
+        Select
+        (source ((desc (Ident foo))))
+        (path ((Ident_attr bar)))
+        (default (((desc (Lit (Integer 4)))))))))
+    |}]
+;;
+
 let%expect_test "lists" =
   test "[]";
   [%expect {| ((desc (List ()))) |}];
@@ -57,5 +89,5 @@ let%expect_test "lists" =
 
 let%expect_test "attrsets" =
   test {|{ "" = 1; }|};
-  [%expect {| ((desc (Attrset (((~name "") (~value ((desc (Lit (Integer 1)))))))))) |}]
+  [%expect {| ((desc (Attrset ((((String_attr "")) ((desc (Lit (Integer 1))))))))) |}]
 ;;

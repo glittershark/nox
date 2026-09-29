@@ -32,7 +32,7 @@ let cmd_eval =
          | expr ->
            Concurrent.spawn_join conc () ~f:(fun _ par _ : (unit, exn) result ->
              let res = eval par expr |> Value.recursive_force par in
-             Core.print_s [%sexp (res : Value.t)];
+             Core.print_endline (Value.to_string par res);
              Ok ()))
        >>= function
        | Ok () -> return ()

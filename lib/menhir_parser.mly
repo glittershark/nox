@@ -1,5 +1,5 @@
 %token EOF LPAR RPAR LCURLY RCURLY LSQUARE RSQUARE LET IN SEMI COLN NULL PLUS 
-%token MINUS IF THEN ELSE TRUE FALSE EQUAL
+%token MINUS IF THEN ELSE TRUE FALSE EQUAL DOT OR
 %token <string> STRING
 %token <string> IDENT
 %token <int> INT
@@ -55,6 +55,13 @@ expr_op:
 expr_app:
   | func=expr_simple args=expr_simple+
     { { Ast.desc = Apply { func; args = Iarray.of_list args } } }
+  | e=expr_select { e }
+
+expr_select:
+  | source=expr_simple DOT path=attr_path
+    { { Ast.desc = Select { source; path; default = Null } } }
+  | source=expr_simple DOT path=attr_path OR default=expr_select
+    { { Ast.desc = Select { source; path; default = This default } } }
   | e=expr_simple { e }
 
 expr_simple:
@@ -63,21 +70,37 @@ expr_simple:
   | LPAR e=expr RPAR { e }
   | LCURLY bindings=binding* RCURLY
     { { Ast.desc = Attrset (Iarray.of_list bindings) } }
-  | LSQUARE exprs=expr_simple* RSQUARE
+  | LSQUARE exprs=expr_select* RSQUARE
     { { Ast.desc = List (Iarray.of_list exprs) } }
   ;
 
-attr_name:
-  | i=ident { i }
-  | s=STRING { Ident.of_string s }
+attr:
+  | i=ident { Ident_attr i }
+  | s=STRING { String_attr s }
   ;
 
 binding:
-  name=attr_name (* TODO: attrpath *)
+  a=attr_path 
   EQUAL
   value=expr
   SEMI
-  { (~name, ~value) }
+  { (a, value) }
+
+attr_path:
+  p=attr_path_aux { Vec.to_iarray p }
+
+attr_path_aux:
+  | p=attr_path_aux DOT a=attr
+    {
+      Vec.push_back p a;
+      p
+    }
+  | a=attr
+    {
+      let p = Vec.create () in
+      Vec.push_back p a;
+      p
+    }
 
 ident: i=IDENT { Ident.of_string i }
 

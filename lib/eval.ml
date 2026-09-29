@@ -28,7 +28,7 @@ let rec eval par ~(env : Env.t) (expr : Ast.expr) =
     (match Value.deep_force par cond with
      | Bool true -> eval par ~env then_
      | Bool false -> eval par ~env else_
-     | _ -> raise_s [%message "Expecting boolean in condition of if"])
+     | _ -> raise_s [%message "Expected boolean in condition of if"])
   | Lam { args; body } -> Lambda { args; body }
   | Apply { func; args } -> eval_apply par ~env func args
   | Let { bindings; body } ->
@@ -42,6 +42,24 @@ let rec eval par ~(env : Env.t) (expr : Ast.expr) =
     |> Parallel.Arrays.Iarray.to_iarray
     |> List
   | Attrset attrs -> eval_attrset par ~env attrs |> Attrs
+  | Select { source; path; default } ->
+    let source = eval par ~env source in
+    Iarray.fold_until
+      path
+      ~init:source
+      ~f:(fun res attr ->
+        let attr = eval_attr par ~env attr in
+        match Value.recursive_force par res with
+        | Attrs { attrs } ->
+          (match Map.find attrs attr with
+           | None ->
+             Stop
+               (match default with
+                | Null -> raise_s [%message "Attr not found" (path : Ast.attr_path)]
+                | This default -> eval par ~env default)
+           | Some value -> Continue value)
+        | _ -> raise_s [%message "Not an attribute set"])
+      ~finish:Fn.id [@nontail]
 
 and eval_apply par ~env func args =
   let #(func_v, args_vs) =
@@ -116,11 +134,40 @@ and eval_apply par ~env func args =
           }
       })
 
-and eval_attrset par ~env attrset =
+and eval_attrset par ~env bindings =
   { Value.Attrs.attrs =
-      Ident.Map.of_iteri_exn ~iteri:(fun ~f ->
-        Iarray.iter attrset ~f:(fun (~name, ~value) ->
-          f ~key:name ~data:(Value.thunk (fun par -> eval par ~env value)))
-        [@nontail])
+      (* TODO: parallel fold with recursive merge *)
+      Iarray.fold
+        bindings
+        ~init:(Ident.Map.empty : Value.t Ident.Map.t)
+        ~f:(fun res (attrpath, value) ->
+          let rec assign m n =
+            match n with
+            | 0 -> m
+            | n ->
+              let key =
+                Iarray.get attrpath (Iarray.length attrpath - n) |> eval_attr par ~env
+              in
+              (match n with
+               | 1 -> Map.set m ~key ~data:(Value.thunk (fun par -> eval par ~env value))
+               | n ->
+                 Map.update m key ~f:(fun next ->
+                   let next =
+                     match Option.map ~f:(Value.recursive_force par) next with
+                     | None -> Ident.Map.empty
+                     | Some (Value.Attrs { attrs }) -> attrs
+                     | _ -> raise_s [%message "Attribute already defined"]
+                   in
+                   Value.Attrs { attrs = assign next (n - 1) })
+                 [@nontail])
+          in
+          assign res (Iarray.length attrpath) [@nontail])
   }
+
+and eval_attr _par ~env (attr : Ast.attr) =
+  match attr with
+  | Ident_attr i -> i
+  | String_attr s ->
+    (* TODO: interpolation *)
+    Ident.of_string s
 ;;

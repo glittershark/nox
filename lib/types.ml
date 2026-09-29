@@ -21,6 +21,7 @@ and lambda =
   }
 [@@deriving sexp_of]
 
+(* AST *)
 and expr = { desc : expr_desc }
 
 and expr_desc =
@@ -50,9 +51,20 @@ and expr_desc =
       }
   | List of expr iarray
   | Attrset of attrset
+  | Select of
+      { source : expr
+      ; path : attr_path
+      ; default : expr or_null
+      }
 
-and attrset = (name:Ident.t * value:expr) iarray
+and attrset = (attr_path * expr) iarray
 
 and bin_op =
   | Plus
   | Minus
+
+and attr =
+  | Ident_attr of Ident.t
+  | String_attr of string (* TODO: interpolation *)
+
+and attr_path = attr iarray
