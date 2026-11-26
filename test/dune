@@ -3,7 +3,9 @@
  (libraries core base_quickcheck expect_test_helpers_core nox)
  (preprocess
   (pps ppx_jane ppx_quick_test))
- (inline_tests))
+ (inline_tests
+  (deps
+   (glob_files ./lang/*))))
 
 (cram
  (deps %{bin:nox}))
